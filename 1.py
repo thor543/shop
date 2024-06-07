@@ -1,26 +1,13 @@
 from flask import Flask, request, abort
-from linebot.v3.messaging import MessagingApi
-from linebot.v3.webhook import WebhookHandler
+from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.v3.messaging.models import TextMessage
+from linebot.models import MessageEvent, TextMessage
 import os
 
 app = Flask(__name__)
 
-# 从环境变量中获取 Line Bot API 和 Webhook Handler 的凭证
-channel_access_token = os.getenv('GpsIpFwvg0COEKfSidtPrJZe1t7ELxxxcgTO9yq1XThlJNCr9d3C3x5pK8gvvb20M00Dcp8hQXB+P5982qe1bw5igyooBUVTknHJr6ymZxlITCp77TFlfqfsM//5GtQKVdT8WhAlrk2Fu/37g5rI1gdB04t89/1O/w1cDnyilFU=')
-channel_secret = os.getenv('e0e81d04355f41b5ed8a9bb2f0d045d4')
-
-# 检查是否获取到了环境变量
-
-# 创建 MessagingApi 实例时，传递一个配置对象作为参数
-config = {
-    "channel_access_token": channel_access_token,
-    "channel_secret": channel_secret
-}
-
-line_bot_api = MessagingApi(config)
-handler = WebhookHandler(channel_secret=channel_secret)
+line_bot_api = LineBotApi(os.getenv('GpsIpFwvg0COEKfSidtPrJZe1t7ELxxxcgTO9yq1XThlJNCr9d3C3x5pK8gvvb20M00Dcp8hQXB+P5982qe1bw5igyooBUVTknHJr6ymZxlITCp77TFlfqfsM//5GtQKVdT8WhAlrk2Fu/37g5rI1gdB04t89/1O/w1cDnyilFU='))
+handler = WebhookHandler(os.getenv('e0e81d04355f41b5ed8a9bb2f0d045d4'))
 
 @app.route("/webhook", methods=['POST'])
 def webhook():
@@ -35,11 +22,14 @@ def webhook():
 
     return 'OK'
 
-@handler.add(TextMessage)
+@handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    # 输出群组 ID
     if event.source.type == 'group':
         group_id = event.source.group_id
-        app.logger.info(f"Group ID: {group_id}")
+        user_id = event.source.user_id
+        app.logger.info(f"Group ID: {group_id}, User ID: {user_id}")
+        # 回复群组 ID 给用户
         line_bot_api.reply_message(event.reply_token, TextMessage(text=f"Group ID: {group_id}"))
 
 if __name__ == "__main__":
